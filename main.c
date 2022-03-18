@@ -6,7 +6,7 @@
 /*   By: youjeon <youjeon@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/03/15 18:14:58 by youjeon           #+#    #+#             */
-/*   Updated: 2022/03/18 11:05:49 by youjeon          ###   ########.fr       */
+/*   Updated: 2022/03/18 12:15:35 by youjeon          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -73,7 +73,7 @@ char	*ft_strjoin(char *s1, char *s2)
 		return (ft_strdup(s1));
 	s1_len = ft_strlen(s1);
 	s2_len = ft_strlen(s2);
-	new_mem = malloc(s1_len + s2_len + 1);
+	new_mem = malloc(s1_len + s2_len);
 	if (!(new_mem))
 		return (NULL);
 	ft_strlcpy(new_mem, s1, s1_len + 1);
@@ -105,8 +105,8 @@ t_game	map_read(char *filename, t_game game)
 
 	fd = open(filename, O_RDONLY);
 	line = get_next_line(fd);
-	game.height = 1;
-	game.width = ft_strlen(line);
+	game.height = 0;
+	game.width = ft_strlen(line) - 1;
 	game.str_line = ft_strdup(line);
 	while (line)
 	{
@@ -114,11 +114,46 @@ t_game	map_read(char *filename, t_game game)
 		index = 0;
 		line = get_next_line(fd);
 		game.str_line = ft_strjoin(game.str_line, line);
-
-	printf("%s", line);	
 	}
-	printf("\n%s \n", game.str_line);	
+	printf("%s \n", game.str_line);
 	return (game);
+}
+
+void	setting_img(t_game game)
+{
+	int		hei;
+	int		wid;
+
+	hei = 0;
+	while (hei < game.height)
+	{
+		wid = 0;
+		while (wid < game.width)
+		{
+			if (game.str_line[hei * game.width + wid] == '1')
+			{
+				mlx_put_image_to_window(game.mlx, game.win, game.img.wall, wid * 64, hei * 64);
+			}
+			else if (game.str_line[hei * game.width + wid] == 'C')
+			{
+				mlx_put_image_to_window(game.mlx, game.win, game.img.chest, wid * 64, hei * 64);
+			}
+			else if (game.str_line[hei * game.width + wid] == 'P')
+			{
+				mlx_put_image_to_window(game.mlx, game.win, game.img.chara, wid * 64, hei * 64);
+			}
+			else if (game.str_line[hei * game.width + wid] == 'E')
+			{
+				mlx_put_image_to_window(game.mlx, game.win, game.img.rune, wid * 64, hei * 64);
+			}
+			else
+			{
+				mlx_put_image_to_window(game.mlx, game.win, game.img.land, wid * 64, hei * 64);
+			}
+			wid++;
+		}
+		hei++;
+	}
 }
 
 int	main(int ac, char *av[])
@@ -127,9 +162,9 @@ int	main(int ac, char *av[])
 
 	game.mlx = mlx_init();
 	game.img = img_init(game.mlx);
-	write(1,"test\n",5);
 	game = map_read(av[1], game);
-	//game.win = mlx_new_window(game.mlx, 500, 500, "my_mlx");
-	//mlx_loop(game.mlx);
+	game.win = mlx_new_window(game.mlx, game.width * 64, game.height * 64, "my_mlx");
+	setting_img(game);
+	mlx_loop(game.mlx);
 	return (0);
 }
