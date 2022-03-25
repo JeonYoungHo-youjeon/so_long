@@ -1,4 +1,4 @@
-NAME		= so_long
+NAME		= main
 
 SRCS		= main.c \
 			  get_next_line.c \
@@ -16,7 +16,7 @@ FLAGS		=
 all			:	$(NAME)
 
 $(NAME)		:	$(OBJS)
-		arch -x86_64 gcc -o $(NAME) $(OBJS) -L./mlx -lmlx -framework OpenGL -framework AppKit
+		arch -x86_64 gcc -o $(NAME) $(OBJS) -L./mlx -lmlx -framework OpenGL -framework AppKit -g 
 
 %.o			:	%.c
 		arch -x86_64 gcc $(FLAGS) -c $^ -I./ -o $@
