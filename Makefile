@@ -10,13 +10,12 @@ OBJS		= $(SRCS:%.c=%.o)
 
 LIBC		= ar rc
 
-FLAGS		= 
-# -Wall -Wextra -Werror
+FLAGS		= -Wall -Wextra -Werror
 
 all			:	$(NAME)
 
 $(NAME)		:	$(OBJS)
-		arch -x86_64 gcc -o $(NAME) $(OBJS) -L./mlx -lmlx -framework OpenGL -framework AppKit -g 
+		arch -x86_64 gcc -g -o $(NAME) $(OBJS) -L./mlx -lmlx -framework OpenGL -framework AppKit
 
 %.o			:	%.c
 		arch -x86_64 gcc $(FLAGS) -c $^ -I./ -o $@

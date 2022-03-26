@@ -6,18 +6,11 @@
 /*   By: youjeon <youjeon@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/03/15 18:14:58 by youjeon           #+#    #+#             */
-/*   Updated: 2022/03/26 16:08:02 by youjeon          ###   ########.fr       */
+/*   Updated: 2022/03/27 01:25:27 by youjeon          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "so_long.h"
-
-void	print_err(char *message)
-{
-	write(2, "Error\n", 6);
-	write(2, message, ft_strlen(message));
-	exit(1);
-}
 
 char	*ft_strdup(char *s)
 {
@@ -40,10 +33,10 @@ char	*ft_strdup(char *s)
 	return (new_mem);
 }
 
-size_t	ft_strlcpy(char *dst, char *src, size_t len)
+int	ft_strlcpy(char *dst, char *src, int len)
 {
-	size_t	src_len;
-	size_t	i;
+	int	src_len;
+	int	i;
 
 	src_len = 0;
 	i = 0;
@@ -84,7 +77,16 @@ char	*ft_strjoin(char *s1, char *s2)
 		return (NULL);
 	ft_strlcpy(new_mem, s1, s1_len + 1);
 	ft_strlcpy(new_mem + s1_len, s2, s2_len + 1);
+	free(s1);
+	free(s2);
 	return (new_mem);
+}
+
+void	print_err(char *message)
+{
+	write(2, "Error\n", 6);
+	write(2, message, ft_strlen(message));
+	exit(1);
 }
 
 t_img	img_init(void *mlx)
@@ -98,6 +100,7 @@ t_img	img_init(void *mlx)
 	rt.chara = mlx_xpm_file_to_image(mlx, "./images/chara.xpm", &wid, &hei);
 	rt.chest = mlx_xpm_file_to_image(mlx, "./images/chest.xpm", &wid, &hei);
 	rt.rune = mlx_xpm_file_to_image(mlx, "./images/rune.xpm", &wid, &hei);
+	rt.rune2 = mlx_xpm_file_to_image(mlx, "./images/rune2.xpm", &wid, &hei);
 	return (rt);
 }
 
@@ -105,40 +108,47 @@ void	map_read(char *filename, t_game *game)
 {
 	int		fd;
 	char	*line;
-	int		index;
 
 	fd = open(filename, O_RDONLY);
 	if (fd <= 0)
 		print_err("File open fail.\n");
 	line = get_next_line(fd);
-	game->height = 0;
-	game->width = ft_strlen(line) - 1;
+	game->hei = 0;
+	game->walk_cnt = 0;
+	game->wid = ft_strlen(line) - 1;
 	game->str_line = ft_strdup(line);
+	free(line);
 	while (line)
 	{
-		game->height++;
-		index = 0;
+		game->hei++;
 		line = get_next_line(fd);
-		game->str_line = ft_strjoin(game->str_line, line);
+		if (line)
+		{
+			game->str_line = ft_strjoin(game->str_line, line);
+		}
 	}
-	printf("%s \n", game->str_line);
+	close(fd);
 }
 
 void	put_img(t_game *g, int w, int h)
 {
-	if (g->str_line[h * g->width + w] == '1')
+	if (g->str_line[h * g->wid + w] == '1')
 	{
 		mlx_put_image_to_window(g->mlx, g->win, g->img.wall, w * 64, h * 64);
 	}
-	else if (g->str_line[h * g->width + w] == 'C')
+	else if (g->str_line[h * g->wid + w] == 'C')
 	{
 		mlx_put_image_to_window(g->mlx, g->win, g->img.chest, w * 64, h * 64);
 	}
-	else if (g->str_line[h * g->width + w] == 'P')
+	else if (g->str_line[h * g->wid + w] == 'P')
 	{
 		mlx_put_image_to_window(g->mlx, g->win, g->img.chara, w * 64, h * 64);
 	}
-	else if (g->str_line[h * g->width + w] == 'E')
+	else if (g->str_line[h * g->wid + w] == 'E' && g->all_col == g->col_cnt)
+	{
+		mlx_put_image_to_window(g->mlx, g->win, g->img.rune2, w * 64, h * 64);
+	}
+	else if (g->str_line[h * g->wid + w] == 'E')
 	{
 		mlx_put_image_to_window(g->mlx, g->win, g->img.rune, w * 64, h * 64);
 	}
@@ -154,10 +164,10 @@ void	setting_img(t_game *game)
 	int		wid;
 
 	hei = 0;
-	while (hei < game->height)
+	while (hei < game->hei)
 	{
 		wid = 0;
-		while (wid < game->width)
+		while (wid < game->wid)
 		{
 			put_img(game, wid, hei);
 			wid++;
@@ -173,17 +183,17 @@ void	map_check_wall(t_game *game)
 	i = 0;
 	while (i < ft_strlen(game->str_line))
 	{
-		if (i < game->width)
+		if (i < game->wid)
 		{
 			if (game->str_line[i] != '1')
 				print_err("Map must be closed/surrounded by walls");
 		}
-		else if (i % game->width == 0 || i % game->width == game->width - 1)
+		else if (i % game->wid == 0 || i % game->wid == game->wid - 1)
 		{
 			if (game->str_line[i] != '1')
 				print_err("Map must be closed/surrounded by walls");
 		}
-		else if (i > ft_strlen(game->str_line) - game->width)
+		else if (i > ft_strlen(game->str_line) - game->wid)
 		{
 			if (game->str_line[i] != '1')
 				print_err("Map must be closed/surrounded by walls");
@@ -197,12 +207,12 @@ void	map_check_params(t_game *game)
 	int	i;
 	int	num_e;
 	int	num_p;
-	int	num_c;
 
 	i = 0;
 	num_e = 0;
 	num_p = 0;
-	num_c = 0;
+	game->all_col = 0;
+	game->col_cnt = 0;
 	while (i++ < ft_strlen(game->str_line))
 	{
 		if (game->str_line[i] == 'E')
@@ -210,11 +220,11 @@ void	map_check_params(t_game *game)
 		else if (game->str_line[i] == 'P')
 			num_p++;
 		else if (game->str_line[i] == 'C')
-			num_c++;
+			game->all_col++;
 	}
 	if (num_e == 0)
 		print_err("Map must have at least one exit");
-	if (num_c == 0)
+	if (game->all_col == 0)
 		print_err("Map must have at least one collectible");
 	if (num_p != 1)
 		print_err("Map must have one starting position");
@@ -222,7 +232,7 @@ void	map_check_params(t_game *game)
 
 void	map_check(t_game *game)
 {
-	if (game->height * game->width != ft_strlen(game->str_line))
+	if (game->hei * game->wid != ft_strlen(game->str_line))
 		print_err("Map must be rectangular.\n");
 	map_check_wall(game);
 	map_check_params(game);
@@ -234,8 +244,132 @@ void	game_init(t_game *g, char *map)
 	g->img = img_init(g->mlx);
 	map_read(map, g);
 	map_check(g);
-	g->win = mlx_new_window(g->mlx, g->width * 64, g->height * 64, "so_long");
+	g->win = mlx_new_window(g->mlx, g->wid * 64, g->hei * 64, "so_long");
 	setting_img(g);
+}
+
+int	exit_game(t_game *game)
+{
+	mlx_destroy_window(game->mlx, game->win);
+	exit(0);
+}
+
+int	clear_game(t_game *game)
+{
+	game->walk_cnt++;
+	printf("%s %d%s\n", "Congratulations! You have", game->walk_cnt, "steps.");
+	exit(0);
+}
+
+void	move_w(t_game *g)
+{
+	int	i;
+
+	i = 0;
+	while (i++ < ft_strlen(g->str_line))
+	{
+		if (g->str_line[i] == 'P')
+			break ;
+	}
+	if (g->str_line[i - g->wid] == 'C')
+		g->col_cnt++;
+	if (g->str_line[i - g->wid] == 'E' && g->all_col == g->col_cnt)
+		clear_game(g);
+	else if (g->str_line[i - g->wid] != '1' && g->str_line[i - g->wid] != 'E')
+	{
+		g->str_line[i] = '0';
+		g->str_line[i - g->wid] = 'P';
+		g->walk_cnt++;
+		printf("%d\n", g->walk_cnt);
+		setting_img(g);
+	}
+}
+
+void	move_a(t_game *g)
+{
+	int	i;
+
+	i = 0;
+	while (i++ < ft_strlen(g->str_line))
+	{
+		if (g->str_line[i] == 'P')
+			break ;
+	}
+	if (g->str_line[i - 1] == 'C')
+		g->col_cnt++;
+	if (g->str_line[i - 1] == 'E' && g->all_col == g->col_cnt)
+		clear_game(g);
+	else if (g->str_line[i - 1] != '1' && g->str_line[i - 1] != 'E')
+	{
+		g->str_line[i] = '0';
+		g->str_line[i - 1] = 'P';
+		g->walk_cnt++;
+		printf("%d\n", g->walk_cnt);
+		setting_img(g);
+	}
+}
+
+void	move_s(t_game *g)
+{
+	int	i;
+
+	i = 0;
+	while (i++ < ft_strlen(g->str_line))
+	{
+		if (g->str_line[i] == 'P')
+			break ;
+	}
+	if (g->str_line[i + g->wid] == 'C')
+		g->col_cnt++;
+	if (g->str_line[i + g->wid] == 'E' && g->all_col == g->col_cnt)
+		clear_game(g);
+	else if (g->str_line[i + g->wid] != '1' && g->str_line[i + g->wid] != 'E')
+	{
+		g->str_line[i] = '0';
+		g->str_line[i + g->wid] = 'P';
+		g->walk_cnt++;
+		printf("%d\n", g->walk_cnt);
+		setting_img(g);
+	}
+}
+
+void	move_d(t_game *g)
+{
+	int	i;
+
+	i = 0;
+	while (i++ < ft_strlen(g->str_line))
+	{
+		if (g->str_line[i] == 'P')
+			break ;
+	}
+	if (g->str_line[i + 1] == 'C')
+		g->col_cnt++;
+	if (g->str_line[i + 1] == 'E' && g->all_col == g->col_cnt)
+		clear_game(g);
+	else if (g->str_line[i + 1] != '1' && g->str_line[i + 1] != 'E')
+	{
+		g->str_line[i] = '0';
+		g->str_line[i + 1] = 'P';
+		g->walk_cnt++;
+		printf("%d\n", g->walk_cnt);
+		setting_img(g);
+	}
+}
+
+int	press_key(int key_code, t_game *game)
+{
+	if (key_code == KEY_ESC)
+		exit_game(game);
+	if (key_code == KEY_W)
+		move_w(game);
+	if (key_code == KEY_A)
+		move_a(game);
+	if (key_code == KEY_S)
+		move_s(game);
+	if (key_code == KEY_D)
+		move_d(game);
+	return (0);
 }
 
 int	main(int ac, char *av[])
@@ -246,6 +380,8 @@ int	main(int ac, char *av[])
 		print_err("Map is missing.\n");
 	game = malloc(sizeof(t_game));
 	game_init(game, av[1]);
+	mlx_hook(game->win, X_EVENT_KEY_PRESS, 0, &press_key, game);
+	mlx_hook(game->win, X_EVENT_KEY_EXIT, 0, &exit_game, game);
 	mlx_loop(game->mlx);
 	return (0);
 }
