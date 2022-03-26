@@ -6,7 +6,7 @@
 /*   By: youjeon <youjeon@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/03/15 18:14:58 by youjeon           #+#    #+#             */
-/*   Updated: 2022/03/25 16:58:37 by youjeon          ###   ########.fr       */
+/*   Updated: 2022/03/26 16:08:02 by youjeon          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,7 @@ void	print_err(char *message)
 {
 	write(2, "Error\n", 6);
 	write(2, message, ft_strlen(message));
+	exit(1);
 }
 
 char	*ft_strdup(char *s)
@@ -107,6 +108,8 @@ void	map_read(char *filename, t_game *game)
 	int		index;
 
 	fd = open(filename, O_RDONLY);
+	if (fd <= 0)
+		print_err("File open fail.\n");
 	line = get_next_line(fd);
 	game->height = 0;
 	game->width = ft_strlen(line) - 1;
@@ -163,11 +166,74 @@ void	setting_img(t_game *game)
 	}
 }
 
+void	map_check_wall(t_game *game)
+{
+	int		i;
+
+	i = 0;
+	while (i < ft_strlen(game->str_line))
+	{
+		if (i < game->width)
+		{
+			if (game->str_line[i] != '1')
+				print_err("Map must be closed/surrounded by walls");
+		}
+		else if (i % game->width == 0 || i % game->width == game->width - 1)
+		{
+			if (game->str_line[i] != '1')
+				print_err("Map must be closed/surrounded by walls");
+		}
+		else if (i > ft_strlen(game->str_line) - game->width)
+		{
+			if (game->str_line[i] != '1')
+				print_err("Map must be closed/surrounded by walls");
+		}
+		i++;
+	}
+}
+
+void	map_check_params(t_game *game)
+{
+	int	i;
+	int	num_e;
+	int	num_p;
+	int	num_c;
+
+	i = 0;
+	num_e = 0;
+	num_p = 0;
+	num_c = 0;
+	while (i++ < ft_strlen(game->str_line))
+	{
+		if (game->str_line[i] == 'E')
+			num_e++;
+		else if (game->str_line[i] == 'P')
+			num_p++;
+		else if (game->str_line[i] == 'C')
+			num_c++;
+	}
+	if (num_e == 0)
+		print_err("Map must have at least one exit");
+	if (num_c == 0)
+		print_err("Map must have at least one collectible");
+	if (num_p != 1)
+		print_err("Map must have one starting position");
+}
+
+void	map_check(t_game *game)
+{
+	if (game->height * game->width != ft_strlen(game->str_line))
+		print_err("Map must be rectangular.\n");
+	map_check_wall(game);
+	map_check_params(game);
+}
+
 void	game_init(t_game *g, char *map)
 {
 	g->mlx = mlx_init();
 	g->img = img_init(g->mlx);
 	map_read(map, g);
+	map_check(g);
 	g->win = mlx_new_window(g->mlx, g->width * 64, g->height * 64, "so_long");
 	setting_img(g);
 }
@@ -176,6 +242,8 @@ int	main(int ac, char *av[])
 {
 	t_game	*game;
 
+	if (ac != 2)
+		print_err("Map is missing.\n");
 	game = malloc(sizeof(t_game));
 	game_init(game, av[1]);
 	mlx_loop(game->mlx);
