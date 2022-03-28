@@ -6,14 +6,14 @@
 /*   By: youjeon <youjeon@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/12/10 20:05:14 by jaehwkim          #+#    #+#             */
-/*   Updated: 2022/03/18 00:20:21 by youjeon          ###   ########.fr       */
+/*   Updated: 2022/03/28 18:07:03 by youjeon          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "get_next_line.h"
 #define BUFFER_SIZE 1
 
-static char	*ft_strjoin(char *static_buffer, char *buf)
+static char	*ft_gnl_strjoin(char *static_buffer, char *buf)
 {
 	char	*str;
 	int		size_static_buffer;
@@ -58,7 +58,7 @@ char	*how_to_read(int fd, char *static_buffer)
 			return (0);
 		}
 		buf[button] = 0;
-		static_buffer = ft_strjoin(static_buffer, buf);
+		static_buffer = ft_gnl_strjoin(static_buffer, buf);
 	}
 	free(buf);
 	return (static_buffer);
