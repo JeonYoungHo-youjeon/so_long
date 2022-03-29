@@ -21,11 +21,11 @@ FLAGS		= -Wall -Wextra -Werror
 all			:	$(NAME)
 
 $(NAME)		:	$(OBJS)
-		arch -x86_64 make all -C $(LIBFT)/
-		arch -x86_64 gcc -o $(NAME) $(OBJS) -Llibft -lft -L./mlx -lmlx -framework OpenGL -framework AppKit
+		make all -C $(LIBFT)/
+		gcc -o $(NAME) $(OBJS) -Llibft -lft -L./mlx -lmlx -framework OpenGL -framework AppKit
 
 %.o			:	%.c
-		arch -x86_64 gcc $(FLAGS) -c $^ -I./ -o $@
+		gcc $(FLAGS) -c $^ -I./ -o $@
 
 
 clean		:
